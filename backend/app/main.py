@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import market, analysis, screener, trading, kite
+from app.routers import market, analysis, screener, trading, kite, options_analysis
 
 
 app = FastAPI(
@@ -22,6 +22,7 @@ app.include_router(market.router)
 app.include_router(analysis.router)
 app.include_router(screener.router)
 app.include_router(trading.router)
+app.include_router(options_analysis.router)
 
 
 @app.get("/healthz")

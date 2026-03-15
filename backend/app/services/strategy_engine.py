@@ -882,7 +882,41 @@ def analyze_opening_range_breakout(symbol: str) -> Optional[dict]:
     except Exception as e:
         logger.error(f"ORB error for {symbol}: {e}")
         return None
+from app.services.options_strategies import (
+    analyze_long_call,
+    analyze_bull_call_spread,
+    analyze_long_call_butterfly,
+    analyze_call_ratio_backspread,
+    analyze_long_call_condor,
+    analyze_long_put,
+    analyze_bear_put_spread,
+    analyze_long_put_butterfly,
+    analyze_put_ratio_backspread,
+    analyze_long_straddle,
+    analyze_long_strangle,
+)
+from app.services.stock_options_strategies import (
+    analyze_covered_call,
+    analyze_protective_put,
+    analyze_collar,
+    analyze_synthetic_long,
+    analyze_synthetic_short,
+    analyze_stock_repair,
+    analyze_delta_neutral_hedge,
+)
+from app.services.greeks_analyzer import (
+    analyze_delta_directional,
+    analyze_gamma_scalping,
+    analyze_iv_crush_play,
+    analyze_iv_expansion_play,
+    analyze_oi_breakout,
+    analyze_pcr_reversal,
+    analyze_max_pain_magnet,
+    analyze_gex_strategy,
+)
+
 STRATEGY_ANALYZERS = {
+    # Equity strategies
     "MA_CROSSOVER": analyze_ma_crossover,
     "RSI_DIVERGENCE": analyze_rsi_divergence,
     "MACD_SIGNAL": analyze_macd_signal,
@@ -896,6 +930,37 @@ STRATEGY_ANALYZERS = {
     "VOLUME_BREAKOUT": analyze_volume_breakout,
     "ICT_FVG": analyze_ict_fair_value_gap,
     "ORB_STRATEGY": analyze_opening_range_breakout,
+    # Call-side options buying strategies
+    "LONG_CALL": analyze_long_call,
+    "BULL_CALL_SPREAD": analyze_bull_call_spread,
+    "LONG_CALL_BUTTERFLY": analyze_long_call_butterfly,
+    "CALL_RATIO_BACKSPREAD": analyze_call_ratio_backspread,
+    "LONG_CALL_CONDOR": analyze_long_call_condor,
+    # Put-side options buying strategies
+    "LONG_PUT": analyze_long_put,
+    "BEAR_PUT_SPREAD": analyze_bear_put_spread,
+    "LONG_PUT_BUTTERFLY": analyze_long_put_butterfly,
+    "PUT_RATIO_BACKSPREAD": analyze_put_ratio_backspread,
+    # Volatility options strategies
+    "LONG_STRADDLE": analyze_long_straddle,
+    "LONG_STRANGLE": analyze_long_strangle,
+    # Stock + options combined strategies
+    "COVERED_CALL": analyze_covered_call,
+    "PROTECTIVE_PUT": analyze_protective_put,
+    "COLLAR": analyze_collar,
+    "SYNTHETIC_LONG": analyze_synthetic_long,
+    "SYNTHETIC_SHORT": analyze_synthetic_short,
+    "STOCK_REPAIR": analyze_stock_repair,
+    "DELTA_NEUTRAL_HEDGE": analyze_delta_neutral_hedge,
+    # Greeks-based strategies
+    "DELTA_DIRECTIONAL": analyze_delta_directional,
+    "GAMMA_SCALPING": analyze_gamma_scalping,
+    "IV_CRUSH_PLAY": analyze_iv_crush_play,
+    "IV_EXPANSION_PLAY": analyze_iv_expansion_play,
+    "OI_BREAKOUT": analyze_oi_breakout,
+    "PCR_REVERSAL": analyze_pcr_reversal,
+    "MAX_PAIN_MAGNET": analyze_max_pain_magnet,
+    "GEX_STRATEGY": analyze_gex_strategy,
 }
 
 
