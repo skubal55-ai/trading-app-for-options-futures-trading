@@ -71,8 +71,45 @@ async def available_strategies():
                 "description": "Volume Weighted Average Price for intraday support/resistance",
                 "type": "Intraday",
             },
+              {
+                "id": "ORDER_BLOCK",
+                "name": "Order Block (SMC)",
+                "description": "Smart Money Concept - institutional order blocks with volume confirmation",
+                "type": "Institutional",
+            },
+            {
+                "id": "SUPPLY_DEMAND",
+                "name": "Supply & Demand Zones",
+                "description": "Identifies institutional accumulation and distribution zones",
+                "type": "Institutional",
+            },
+            {
+                "id": "EMA_RIBBON",
+                "name": "EMA Ribbon",
+                "description": "Multi-EMA (8,13,21,34,55) alignment for strong trend confirmation",
+                "type": "Trend Following",
+            },
+            {
+                "id": "VOLUME_BREAKOUT",
+                "name": "Volume Breakout",
+                "description": "Breakouts with 2x+ average volume - institutional participation",
+                "type": "Breakout",
+            },
+            {
+                "id": "ICT_FVG",
+                "name": "ICT Fair Value Gap",
+                "description": "Inner Circle Trader concept - price gaps indicating smart money activity",
+                "type": "Smart Money",
+            },
+            {
+                "id": "ORB_STRATEGY",
+                "name": "Opening Range Breakout",
+                "description": "15-minute opening range breakout/breakdown for intraday trading",
+                "type": "Intraday",
+            },
         ]
     }
+
 
 
 @router.get("/quick-scan/{strategy}")
