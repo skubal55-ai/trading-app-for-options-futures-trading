@@ -21,9 +21,9 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       <div className="p-4 border-b border-gray-800">
         <h1 className="text-xl font-bold flex items-center gap-2">
           <TrendingUp className="text-green-400" size={24} />
-          <span>NSE Trading Pro</span>
+          <span>Naksha</span>
         </h1>
-        <p className="text-xs text-gray-400 mt-1">Indian Market Trading Tool</p>
+        <p className="text-xs text-gray-400 mt-1">The Profitable Trading App</p>
       </div>
       <nav className="flex-1 p-2">
         {menuItems.map((item) => {
@@ -47,7 +47,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       <div className="p-4 border-t border-gray-800">
         <div className="text-xs text-gray-500">
           <p>Market Hours: 9:15 AM - 3:30 PM IST</p>
-          <p className="mt-1">Data powered by NSE India</p>
+          <p className="mt-1">Data powered by NSE India & Kite</p>
         </div>
       </div>
     </div>
