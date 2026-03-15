@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+dist/
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Poetry
+.cache/
+
+# Misc
+*.log
+.ICEauthority
+.Xauthority
+.bash_history
+.bash_logout
+.bash_profile
+.bashrc
+.browser_data_dir/
+.cargo/
+.config/
+.dbus/
+.docker/
+.gitconfig
+.kde/
+.local/
+.mcp/
+.npm/
+.nvm/
+.pki/
+.pyenv/
+.rustup/
+.ssh/
+.sudo_as_admin_successful
+.tmux.conf
+.viminfo
+.vnc/
+Desktop/
+repos/
+tests/
