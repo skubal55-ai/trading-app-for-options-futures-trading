@@ -475,7 +475,413 @@ def analyze_vwap(symbol: str) -> Optional[dict]:
         logger.error(f"VWAP error for {symbol}: {e}")
         return None
 
-
+def analyze_order_block(symbol: str) -> Optional[dict]:
+    """Order Block / Smart Money Concept (SMC) strategy used by institutional traders."""
+    try:
+        data = get_historical_data(symbol, period="3mo", interval="1d")
+        if data is None or len(data) < 30:
+            return None
+        indicators = calculate_indicators(data)
+        quote = get_stock_quote(symbol)
+        if not quote:
+            return None
+        ltp = quote["ltp"]
+        atr = indicators.get("atr", ltp * 0.02)
+        closes = data["Close"].values
+        highs = data["High"].values
+        lows = data["Low"].values
+        volumes = data["Volume"].values
+        signal = None
+        confidence = 0.7
+        reason = ""
+        # Detect bullish order block: large bearish candle followed by strong bullish move
+        for i in range(len(closes) - 5, len(closes) - 1):
+            if i < 1:
+                continue
+            # Bearish candle with high volume followed by bullish breakout
+            if closes[i] < closes[i - 1] and volumes[i] > np.mean(volumes[-20:]) * 1.5:
+                # Check if price came back to this zone
+                ob_high = float(highs[i])
+                ob_low = float(lows[i])
+                if ob_low <= ltp <= ob_high * 1.01:
+                    signal = "BUY"
+                    reason = f"Bullish Order Block at ₹{ob_low:.0f}-₹{ob_high:.0f} zone with institutional volume"
+                    confidence = 0.75
+                    break
+        # Detect bearish order block
+        if not signal:
+            for i in range(len(closes) - 5, len(closes) - 1):
+                if i < 1:
+                    continue
+                if closes[i] > closes[i - 1] and volumes[i] > np.mean(volumes[-20:]) * 1.5:
+                    ob_high = float(highs[i])
+                    ob_low = float(lows[i])
+                    if ob_low * 0.99 <= ltp <= ob_high:
+                        signal = "SELL"
+                        reason = f"Bearish Order Block at ₹{ob_low:.0f}-₹{ob_high:.0f} zone with institutional volume"
+                        confidence = 0.75
+                        break
+        if not signal:
+            return None
+        if signal == "BUY":
+            stop_loss = round(ltp - 2.5 * atr, 2)
+            target = round(ltp + 4 * atr, 2)
+        else:
+            stop_loss = round(ltp + 2.5 * atr, 2)
+            target = round(ltp - 4 * atr, 2)
+        risk = abs(ltp - stop_loss)
+        reward = abs(target - ltp)
+        rr = round(reward / risk, 2) if risk > 0 else 0
+        return {
+            "symbol": symbol,
+            "name": quote.get("name", symbol),
+            "ltp": ltp,
+            "signal": signal,
+            "strategy": "ORDER_BLOCK",
+            "entry_price": ltp,
+            "target": target,
+            "stop_loss": stop_loss,
+            "risk_reward": rr,
+            "confidence": confidence,
+            "segment": "EQUITY",
+            "reason": reason,
+        }
+    except Exception as e:
+        logger.error(f"Order Block error for {symbol}: {e}")
+        return None
+def analyze_supply_demand(symbol: str) -> Optional[dict]:
+    """Supply and Demand Zone strategy - identifies institutional buying/selling zones."""
+    try:
+        data = get_historical_data(symbol, period="6mo", interval="1d")
+        if data is None or len(data) < 40:
+            return None
+        indicators = calculate_indicators(data)
+        quote = get_stock_quote(symbol)
+        if not quote:
+            return None
+        ltp = quote["ltp"]
+        atr = indicators.get("atr", ltp * 0.02)
+        closes = data["Close"].values
+        highs = data["High"].values
+        lows = data["Low"].values
+        signal = None
+        confidence = 0.68
+        reason = ""
+        # Find demand zones (strong rally bases)
+        for i in range(5, len(closes) - 2):
+            # Consolidation followed by strong up move
+            range_size = float(highs[i] - lows[i])
+            avg_range = float(np.mean(highs[i-5:i] - lows[i-5:i]))
+            next_move = float(closes[i + 1] - closes[i])
+            if range_size < avg_range * 0.6 and next_move > avg_range * 1.5:
+                zone_low = float(lows[i])
+                zone_high = float(highs[i])
+                if zone_low * 0.99 <= ltp <= zone_high * 1.01:
+                    signal = "BUY"
+                    reason = f"Demand Zone at ₹{zone_low:.0f}-₹{zone_high:.0f}, institutional accumulation area"
+                    confidence = 0.72
+                    break
+        # Find supply zones (strong drop bases)
+        if not signal:
+            for i in range(5, len(closes) - 2):
+                range_size = float(highs[i] - lows[i])
+                avg_range = float(np.mean(highs[i-5:i] - lows[i-5:i]))
+                next_move = float(closes[i] - closes[i + 1])
+                if range_size < avg_range * 0.6 and next_move > avg_range * 1.5:
+                    zone_low = float(lows[i])
+                    zone_high = float(highs[i])
+                    if zone_low * 0.99 <= ltp <= zone_high * 1.01:
+                        signal = "SELL"
+                        reason = f"Supply Zone at ₹{zone_low:.0f}-₹{zone_high:.0f}, institutional distribution area"
+                        confidence = 0.72
+                        break
+        if not signal:
+            return None
+        if signal == "BUY":
+            stop_loss = round(ltp - 2 * atr, 2)
+            target = round(ltp + 3.5 * atr, 2)
+        else:
+            stop_loss = round(ltp + 2 * atr, 2)
+            target = round(ltp - 3.5 * atr, 2)
+        risk = abs(ltp - stop_loss)
+        reward = abs(target - ltp)
+        rr = round(reward / risk, 2) if risk > 0 else 0
+        return {
+            "symbol": symbol,
+            "name": quote.get("name", symbol),
+            "ltp": ltp,
+            "signal": signal,
+            "strategy": "SUPPLY_DEMAND",
+            "entry_price": ltp,
+            "target": target,
+            "stop_loss": stop_loss,
+            "risk_reward": rr,
+            "confidence": confidence,
+            "segment": "EQUITY",
+            "reason": reason,
+        }
+    except Exception as e:
+        logger.error(f"Supply/Demand error for {symbol}: {e}")
+        return None
+def analyze_ema_ribbon(symbol: str) -> Optional[dict]:
+    """EMA Ribbon strategy - uses multiple EMAs (8,13,21,34,55) for trend strength."""
+    try:
+        data = get_historical_data(symbol, period="6mo", interval="1d")
+        if data is None or len(data) < 60:
+            return None
+        quote = get_stock_quote(symbol)
+        indicators = calculate_indicators(data)
+        if not quote:
+            return None
+        ltp = quote["ltp"]
+        atr = indicators.get("atr", ltp * 0.02)
+        close_series = pd.Series(data["Close"])
+        ema_8 = float(close_series.ewm(span=8).mean().iloc[-1])
+        ema_13 = float(close_series.ewm(span=13).mean().iloc[-1])
+        ema_21 = float(close_series.ewm(span=21).mean().iloc[-1])
+        ema_34 = float(close_series.ewm(span=34).mean().iloc[-1])
+        ema_55 = float(close_series.ewm(span=55).mean().iloc[-1])
+        signal = None
+        confidence = 0.7
+        reason = ""
+        # Bullish ribbon: all EMAs aligned upward
+        if ema_8 > ema_13 > ema_21 > ema_34 > ema_55 and ltp > ema_8:
+            signal = "BUY"
+            reason = f"Bullish EMA Ribbon - all EMAs (8,13,21,34,55) aligned upward, strong trend"
+            confidence = 0.78
+        # Bearish ribbon: all EMAs aligned downward
+        elif ema_8 < ema_13 < ema_21 < ema_34 < ema_55 and ltp < ema_8:
+            signal = "SELL"
+            reason = f"Bearish EMA Ribbon - all EMAs (8,13,21,34,55) aligned downward, strong downtrend"
+            confidence = 0.78
+        # Bullish ribbon expansion (price crossing above ribbon)
+        elif ltp > ema_8 > ema_13 and ema_21 > ema_34:
+            signal = "BUY"
+            reason = f"EMA Ribbon expansion - price above EMA 8 ({ema_8:.0f}), bullish momentum building"
+            confidence = 0.65
+        if not signal:
+            return None
+        if signal == "BUY":
+            stop_loss = round(ema_21 - atr, 2)
+            target = round(ltp + 3 * atr, 2)
+        else:
+            stop_loss = round(ema_21 + atr, 2)
+            target = round(ltp - 3 * atr, 2)
+        risk = abs(ltp - stop_loss)
+        reward = abs(target - ltp)
+        rr = round(reward / risk, 2) if risk > 0 else 0
+        return {
+            "symbol": symbol,
+            "name": quote.get("name", symbol),
+            "ltp": ltp,
+            "signal": signal,
+            "strategy": "EMA_RIBBON",
+            "entry_price": ltp,
+            "target": target,
+            "stop_loss": stop_loss,
+            "risk_reward": rr,
+            "confidence": confidence,
+            "segment": "EQUITY",
+            "reason": reason,
+        }
+    except Exception as e:
+        logger.error(f"EMA Ribbon error for {symbol}: {e}")
+        return None
+def analyze_volume_breakout(symbol: str) -> Optional[dict]:
+    """Volume Breakout strategy - detects breakouts with unusual volume (used by institutional traders)."""
+    try:
+        data = get_historical_data(symbol, period="3mo", interval="1d")
+        if data is None or len(data) < 30:
+            return None
+        indicators = calculate_indicators(data)
+        quote = get_stock_quote(symbol)
+        if not quote:
+            return None
+        ltp = quote["ltp"]
+        atr = indicators.get("atr", ltp * 0.02)
+        closes = data["Close"].values
+        highs = data["High"].values
+        volumes = data["Volume"].values
+        avg_volume = float(np.mean(volumes[-20:]))
+        latest_volume = float(volumes[-1])
+        volume_ratio = latest_volume / avg_volume if avg_volume > 0 else 0
+        # 20-day high/low
+        high_20 = float(np.max(highs[-20:]))
+        low_20 = float(np.min(data["Low"].values[-20:]))
+        signal = None
+        confidence = 0.7
+        reason = ""
+        # Bullish volume breakout: price near 20-day high with 2x+ volume
+        if volume_ratio >= 2.0 and ltp >= high_20 * 0.98:
+            signal = "BUY"
+            reason = f"Volume Breakout - {volume_ratio:.1f}x avg volume near 20-day high (₹{high_20:.0f})"
+            confidence = 0.76
+        # Bearish volume breakdown
+        elif volume_ratio >= 2.0 and ltp <= low_20 * 1.02:
+            signal = "SELL"
+            reason = f"Volume Breakdown - {volume_ratio:.1f}x avg volume near 20-day low (₹{low_20:.0f})"
+            confidence = 0.76
+        # Moderate volume with price action
+        elif volume_ratio >= 1.5:
+            if closes[-1] > closes[-2] and closes[-2] > closes[-3]:
+                signal = "BUY"
+                reason = f"Rising price with {volume_ratio:.1f}x volume, momentum building"
+                confidence = 0.62
+            elif closes[-1] < closes[-2] and closes[-2] < closes[-3]:
+                signal = "SELL"
+                reason = f"Falling price with {volume_ratio:.1f}x volume, selling pressure"
+                confidence = 0.62
+        if not signal:
+            return None
+        if signal == "BUY":
+            stop_loss = round(ltp - 2 * atr, 2)
+            target = round(ltp + 3.5 * atr, 2)
+        else:
+            stop_loss = round(ltp + 2 * atr, 2)
+            target = round(ltp - 3.5 * atr, 2)
+        risk = abs(ltp - stop_loss)
+        reward = abs(target - ltp)
+        rr = round(reward / risk, 2) if risk > 0 else 0
+        return {
+            "symbol": symbol,
+            "name": quote.get("name", symbol),
+            "ltp": ltp,
+            "signal": signal,
+            "strategy": "VOLUME_BREAKOUT",
+            "entry_price": ltp,
+            "target": target,
+            "stop_loss": stop_loss,
+            "risk_reward": rr,
+            "confidence": confidence,
+            "segment": "EQUITY",
+            "reason": reason,
+        }
+    except Exception as e:
+        logger.error(f"Volume Breakout error for {symbol}: {e}")
+        return None
+def analyze_ict_fair_value_gap(symbol: str) -> Optional[dict]:
+    """ICT Fair Value Gap (FVG) - Inner Circle Trader concept used by smart money."""
+    try:
+        data = get_historical_data(symbol, period="3mo", interval="1d")
+        if data is None or len(data) < 20:
+            return None
+        indicators = calculate_indicators(data)
+        quote = get_stock_quote(symbol)
+        if not quote:
+            return None
+        ltp = quote["ltp"]
+        atr = indicators.get("atr", ltp * 0.02)
+        highs = data["High"].values
+        lows = data["Low"].values
+        closes = data["Close"].values
+        signal = None
+        confidence = 0.7
+        reason = ""
+        # Look for bullish FVG: gap between candle 1 high and candle 3 low
+        for i in range(len(closes) - 5, len(closes) - 1):
+            if i < 2:
+                continue
+            # Bullish FVG
+            if float(lows[i + 1]) > float(highs[i - 1]):
+                fvg_low = float(highs[i - 1])
+                fvg_high = float(lows[i + 1]) if i + 1 < len(lows) else float(lows[i])
+                if fvg_low * 0.99 <= ltp <= fvg_high * 1.01:
+                    signal = "BUY"
+                    reason = f"ICT Bullish Fair Value Gap at ₹{fvg_low:.0f}-₹{fvg_high:.0f}, smart money zone"
+                    confidence = 0.73
+                    break
+            # Bearish FVG
+            if float(highs[i + 1]) < float(lows[i - 1]):
+                fvg_high = float(lows[i - 1])
+                fvg_low = float(highs[i + 1]) if i + 1 < len(highs) else float(highs[i])
+                if fvg_low * 0.99 <= ltp <= fvg_high * 1.01:
+                    signal = "SELL"
+                    reason = f"ICT Bearish Fair Value Gap at ₹{fvg_low:.0f}-₹{fvg_high:.0f}, smart money zone"
+                    confidence = 0.73
+                    break
+        if not signal:
+            return None
+        if signal == "BUY":
+            stop_loss = round(ltp - 2 * atr, 2)
+            target = round(ltp + 3.5 * atr, 2)
+        else:
+            stop_loss = round(ltp + 2 * atr, 2)
+            target = round(ltp - 3.5 * atr, 2)
+        risk = abs(ltp - stop_loss)
+        reward = abs(target - ltp)
+        rr = round(reward / risk, 2) if risk > 0 else 0
+        return {
+            "symbol": symbol,
+            "name": quote.get("name", symbol),
+            "ltp": ltp,
+            "signal": signal,
+            "strategy": "ICT_FVG",
+            "entry_price": ltp,
+            "target": target,
+            "stop_loss": stop_loss,
+            "risk_reward": rr,
+            "confidence": confidence,
+            "segment": "EQUITY",
+            "reason": reason,
+        }
+    except Exception as e:
+        logger.error(f"ICT FVG error for {symbol}: {e}")
+        return None
+def analyze_opening_range_breakout(symbol: str) -> Optional[dict]:
+    """Opening Range Breakout (ORB) - popular intraday strategy used by day traders."""
+    try:
+        data = get_stock_data(symbol, period="1d", interval="5m")
+        if data is None or len(data) < 6:
+            return None
+        indicators = calculate_indicators(data)
+        quote = get_stock_quote(symbol)
+        if not quote:
+            return None
+        ltp = quote["ltp"]
+        atr = indicators.get("atr", ltp * 0.005)
+        # First 3 candles (15 minutes) define opening range
+        or_high = float(data["High"].iloc[:3].max())
+        or_low = float(data["Low"].iloc[:3].min())
+        signal = None
+        confidence = 0.7
+        reason = ""
+        if ltp > or_high:
+            signal = "BUY"
+            reason = f"ORB Breakout above ₹{or_high:.0f} (15-min opening range high)"
+            confidence = 0.72
+        elif ltp < or_low:
+            signal = "SELL"
+            reason = f"ORB Breakdown below ₹{or_low:.0f} (15-min opening range low)"
+            confidence = 0.72
+        else:
+            return None
+        or_range = or_high - or_low
+        if signal == "BUY":
+            stop_loss = round(or_low, 2)
+            target = round(ltp + or_range * 2, 2)
+        else:
+            stop_loss = round(or_high, 2)
+            target = round(ltp - or_range * 2, 2)
+        risk = abs(ltp - stop_loss)
+        reward = abs(target - ltp)
+        rr = round(reward / risk, 2) if risk > 0 else 0
+        return {
+            "symbol": symbol,
+            "name": quote.get("name", symbol),
+            "ltp": ltp,
+            "signal": signal,
+            "strategy": "ORB_STRATEGY",
+            "entry_price": ltp,
+            "target": target,
+            "stop_loss": stop_loss,
+            "risk_reward": rr,
+            "confidence": confidence,
+            "segment": "EQUITY",
+            "reason": reason,
+        }
+    except Exception as e:
+        logger.error(f"ORB error for {symbol}: {e}")
+        return None
 STRATEGY_ANALYZERS = {
     "MA_CROSSOVER": analyze_ma_crossover,
     "RSI_DIVERGENCE": analyze_rsi_divergence,
@@ -484,6 +890,12 @@ STRATEGY_ANALYZERS = {
     "BOLLINGER_BREAKOUT": analyze_bollinger_breakout,
     "SUPERTREND": analyze_supertrend,
     "VWAP_STRATEGY": analyze_vwap,
+    "ORDER_BLOCK": analyze_order_block,
+    "SUPPLY_DEMAND": analyze_supply_demand,
+    "EMA_RIBBON": analyze_ema_ribbon,
+    "VOLUME_BREAKOUT": analyze_volume_breakout,
+    "ICT_FVG": analyze_ict_fair_value_gap,
+    "ORB_STRATEGY": analyze_opening_range_breakout,
 }
 
 
