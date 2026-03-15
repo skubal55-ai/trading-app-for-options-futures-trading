@@ -8,6 +8,7 @@ import OptionsChain from './pages/OptionsChain';
 import Trading from './pages/Trading';
 import Portfolio from './pages/Portfolio';
 import Settings from './pages/Settings';
+import Backtesting from './pages/Backtesting';
 import { api } from './services/api';
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
       case 'charts': return <Charts key={refreshKey} />;
       case 'screener': return <Screener key={refreshKey} />;
       case 'options': return <OptionsChain key={refreshKey} />;
+      case 'backtesting': return <Backtesting key={refreshKey} />;
       case 'trading': return <Trading key={refreshKey} />;
       case 'portfolio': return <Portfolio key={refreshKey} />;
       case 'settings': return <Settings />;

@@ -1,4 +1,4 @@
-import { BarChart3, TrendingUp, Search, Briefcase, Settings, Activity, LayoutDashboard } from 'lucide-react';
+import { BarChart3, TrendingUp, Search, Briefcase, Settings, Activity, LayoutDashboard, History } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -10,6 +10,7 @@ const menuItems = [
   { id: 'charts', label: 'Charts', icon: BarChart3 },
   { id: 'screener', label: 'Screener', icon: Search },
   { id: 'options', label: 'Options Chain', icon: Activity },
+  { id: 'backtesting', label: 'Backtesting', icon: History },
   { id: 'trading', label: 'Trading', icon: TrendingUp },
   { id: 'portfolio', label: 'Portfolio', icon: Briefcase },
   { id: 'settings', label: 'Settings', icon: Settings },

@@ -61,4 +61,16 @@ export const api = {
   getAutoTradeSettings: () => fetchApi('/api/trading/auto-trade/settings'),
   updateAutoTradeSettings: (settings: Record<string, unknown>) =>
     fetchApi('/api/trading/auto-trade/settings', { method: 'POST', body: JSON.stringify(settings) }),
+
+  // Backtesting
+  getBacktestStrategies: () => fetchApi('/api/backtest/strategies'),
+  runBacktest: (strategy: string, period = '1y', holdingDays = 10, capital = 100000, symbols?: string) => {
+    const params = new URLSearchParams();
+    params.set('strategy', strategy);
+    params.set('period', period);
+    params.set('holding_days', String(holdingDays));
+    params.set('capital', String(capital));
+    if (symbols) params.set('symbols', symbols);
+    return fetchApi(`/api/backtest/run?${params}`);
+  },
 };
