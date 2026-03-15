@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import market, analysis, screener, trading
+from app.routers import market, analysis, screener, trading, kite
+
 
 app = FastAPI(
     title="NSE Trading Tool API",
