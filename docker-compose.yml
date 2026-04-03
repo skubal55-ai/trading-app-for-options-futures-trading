@@ -1,0 +1,117 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: trading
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  api_gateway:
+    build:
+      context: .
+      dockerfile: infra/docker/python-service.Dockerfile
+    environment:
+      APP_MODULE: apps.api_gateway.main:app
+      PORT: 8000
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/trading
+      STRATEGY_SERVICE_URL: http://strategy_service:8002
+      PAPER_MIN_TRADES: 30
+      PAPER_MIN_PROFIT_FACTOR: 1.1
+      PAPER_MAX_DRAWDOWN_PCT: 12
+      PAPER_MIN_EXPECTANCY: 0.01
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+      - strategy_service
+      - risk_service
+
+  market_data_service:
+    build:
+      context: .
+      dockerfile: infra/docker/python-service.Dockerfile
+    environment:
+      APP_MODULE: apps.market_data_service.main:app
+      PORT: 8001
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/trading
+    ports:
+      - "8001:8001"
+
+  strategy_service:
+    build:
+      context: .
+      dockerfile: infra/docker/python-service.Dockerfile
+    environment:
+      APP_MODULE: apps.strategy_service.main:app
+      PORT: 8002
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/trading
+    ports:
+      - "8002:8002"
+
+  risk_service:
+    build:
+      context: .
+      dockerfile: infra/docker/python-service.Dockerfile
+    environment:
+      APP_MODULE: apps.risk_service.main:app
+      PORT: 8003
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/trading
+    ports:
+      - "8003:8003"
+
+  execution_service:
+    build:
+      context: .
+      dockerfile: infra/docker/python-service.Dockerfile
+    environment:
+      APP_MODULE: apps.execution_service.main:app
+      PORT: 8004
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/trading
+    ports:
+      - "8004:8004"
+
+  paper_sim_service:
+    build:
+      context: .
+      dockerfile: infra/docker/python-service.Dockerfile
+    environment:
+      APP_MODULE: apps.paper_sim_service.main:app
+      PORT: 8005
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/trading
+    ports:
+      - "8005:8005"
+
+  notification_service:
+    build:
+      context: .
+      dockerfile: infra/docker/python-service.Dockerfile
+    environment:
+      APP_MODULE: apps.notification_service.main:app
+      PORT: 8006
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/trading
+    ports:
+      - "8006:8006"
+
+  analytics_service:
+    build:
+      context: .
+      dockerfile: infra/docker/python-service.Dockerfile
+    environment:
+      APP_MODULE: apps.analytics_service.main:app
+      PORT: 8007
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/trading
+    ports:
+      - "8007:8007"
+
+volumes:
+  pg_data:
