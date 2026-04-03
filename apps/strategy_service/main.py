@@ -1,6 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
+from packages.db import get_db
+from packages.db.models import Signal
 from packages.domain_models import TipPayload
 from packages.strategy_plugins import build_tip_from_context, run_backtest_stub
 
@@ -35,7 +38,7 @@ async def signal_sample() -> TipPayload:
 
 
 @app.post("/signal/evaluate", response_model=TipPayload)
-async def evaluate(req: EvaluateRequest) -> TipPayload:
+async def evaluate(req: EvaluateRequest, db: Session = Depends(get_db)) -> TipPayload:
     context = {
         "symbol": req.symbol,
         "quote": {"last_price": 24050.35},
@@ -43,6 +46,19 @@ async def evaluate(req: EvaluateRequest) -> TipPayload:
     }
     try:
         tip = build_tip_from_context(context, req.strategy_id)
+        signal = Signal(
+            instrument=tip["instrument"],
+            segment=tip["segment"],
+            action=tip["action"],
+            entry=tip["entry"],
+            stop=tip["stop"],
+            target=tip["target"],
+            confidence=tip["confidence"],
+            strategy_id=tip["strategy_id"],
+            explanation=tip["explanation"],
+        )
+        db.add(signal)
+        db.commit()
         return TipPayload(**tip)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

@@ -7,7 +7,13 @@ class _StubBroker(BrokerAdapter):
     name = "stub"
 
     async def authenticate(self, credentials: Dict) -> Dict:
-        return {"broker": self.name, "status": "ok", "note": "stub adapter"}
+        if not credentials or not isinstance(credentials, dict):
+            return {"broker": self.name, "status": "failed", "reason": "Missing credentials"}
+        has_key = bool(credentials.get("api_key")) or bool(credentials.get("client_id"))
+        has_secret = bool(credentials.get("api_secret")) or bool(credentials.get("access_token"))
+        if not (has_key and has_secret):
+            return {"broker": self.name, "status": "failed", "reason": "Incomplete credentials"}
+        return {"broker": self.name, "status": "ok", "note": "stub adapter auth contract validated"}
 
     async def get_balance(self) -> Dict:
         return {"broker": self.name, "cash": 0, "margin": 0}

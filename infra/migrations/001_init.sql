@@ -38,3 +38,34 @@ CREATE TABLE IF NOT EXISTS trade_journal (
 );
 
 CREATE INDEX IF NOT EXISTS idx_trade_journal_strategy_id ON trade_journal (strategy_id);
+
+CREATE TABLE IF NOT EXISTS broker_credentials (
+  id SERIAL PRIMARY KEY,
+  broker VARCHAR(32) NOT NULL UNIQUE,
+  encrypted_payload TEXT NOT NULL,
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS paper_run_metrics (
+  id SERIAL PRIMARY KEY,
+  strategy_id VARCHAR(64) NOT NULL,
+  trades INTEGER NOT NULL,
+  profit_factor DOUBLE PRECISION NOT NULL,
+  max_drawdown_pct DOUBLE PRECISION NOT NULL,
+  expectancy DOUBLE PRECISION NOT NULL,
+  gate_status VARCHAR(16) NOT NULL DEFAULT 'unknown',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_paper_run_metrics_strategy_id ON paper_run_metrics (strategy_id);
+
+CREATE TABLE IF NOT EXISTS live_mode_state (
+  id INTEGER PRIMARY KEY,
+  enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  reason TEXT NOT NULL DEFAULT 'Paper gate not evaluated yet',
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO live_mode_state (id, enabled, reason)
+VALUES (1, FALSE, 'Paper gate not evaluated yet')
+ON CONFLICT (id) DO NOTHING;

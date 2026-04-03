@@ -24,6 +24,10 @@ services:
       PORT: 8000
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/trading
       STRATEGY_SERVICE_URL: http://strategy_service:8002
+      RISK_SERVICE_URL: http://risk_service:8003
+      EXECUTION_SERVICE_URL: http://execution_service:8004
+      PAPER_SIM_SERVICE_URL: http://paper_sim_service:8005
+      NOTIFICATION_SERVICE_URL: http://notification_service:8006
       PAPER_MIN_TRADES: 30
       PAPER_MIN_PROFIT_FACTOR: 1.1
       PAPER_MAX_DRAWDOWN_PCT: 12
@@ -77,6 +81,7 @@ services:
       APP_MODULE: apps.execution_service.main:app
       PORT: 8004
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/trading
+      BROKER_CREDENTIALS_FERNET_KEY: ${BROKER_CREDENTIALS_FERNET_KEY}
     ports:
       - "8004:8004"
 
@@ -88,6 +93,10 @@ services:
       APP_MODULE: apps.paper_sim_service.main:app
       PORT: 8005
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/trading
+      PAPER_MIN_TRADES: 30
+      PAPER_MIN_PROFIT_FACTOR: 1.1
+      PAPER_MAX_DRAWDOWN_PCT: 12
+      PAPER_MIN_EXPECTANCY: 0.01
     ports:
       - "8005:8005"
 
@@ -99,6 +108,15 @@ services:
       APP_MODULE: apps.notification_service.main:app
       PORT: 8006
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/trading
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+      WHATSAPP_PROVIDER: ${WHATSAPP_PROVIDER}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM}
+      WHATSAPP_TO: ${WHATSAPP_TO}
+      WHATSAPP_API_BASE_URL: ${WHATSAPP_API_BASE_URL}
+      WHATSAPP_API_KEY: ${WHATSAPP_API_KEY}
     ports:
       - "8006:8006"
 

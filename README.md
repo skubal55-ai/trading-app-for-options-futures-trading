@@ -28,6 +28,12 @@ Local-first monorepo starter for an Indian equities/options automated trading pl
 cp .env.example .env
 ```
 
+Generate an encryption key for broker credentials and set it in `.env`:
+
+```bash
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
 2. Start all services:
 
 ```bash
@@ -57,9 +63,33 @@ curl -X POST http://localhost:8000/api/v1/system/db/init
 - `GET /news/sample` (market data service)
 - `POST /signal/evaluate` (strategy service)
 - `POST /backtest/run` (strategy service)
+- `POST /brokers/credentials/upsert` (execution service)
+- `POST /brokers/{broker}/authenticate` (execution service)
+- `POST /orders/execute` (execution service, persists orders)
+- `POST /journal/append` (execution service, persists journal)
+- `POST /paper-run/record` (paper sim service, auto-updates live gate)
+- `GET /api/v1/live/status` (gateway, current live-mode state)
+- `POST /alerts/send` (notification service, Telegram/Twilio WhatsApp)
+- `POST /api/v1/orchestrate/trade-cycle` (gateway, one-call strategy->risk->execute/paper->journal->alerts)
 
 ## Notes
 
 - This is a starter scaffold, not production-ready execution logic.
 - Live mode is blocked unless paper-gate conditions pass.
 - Add real broker credentials, exchange calendars, and data provider adapters before live use.
+
+### One-call orchestration example
+
+```bash
+curl -X POST http://localhost:8000/api/v1/orchestrate/trade-cycle \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mode": "paper",
+    "symbol": "NIFTY",
+    "strategy_id": "trend_ema_pullback",
+    "position_size": 10,
+    "broker": "zerodha",
+    "deployed_capital": 100000,
+    "max_daily_loss_amount": 5000
+  }'
+```
